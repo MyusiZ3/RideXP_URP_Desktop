@@ -29,37 +29,27 @@ public class SpeedBoostZone : MonoBehaviour
             {
                 isBoosting = true;
                 bike.ApplySpeedBoost(speedMultiplier, boostDuration);
-                Debug.Log("⚡ Speedup On!");
+                Debug.Log("Speedup On!");
 
                 if (boostSFX != null)
                 {
                     (audioSource != null ? audioSource : GetComponent<AudioSource>())?.PlayOneShot(boostSFX);
                 }
 
-                // 🔥 Tampilkan UI teks
+                // Tampilkan UI teks
                 if (boostText != null)
                 {
                     StartCoroutine(ShowBoostText());
                 }
 
-                StartCoroutine(BoostDurationCoroutine(bike));
+                StartCoroutine(ResetBoostCooldown());
             }
         }
     }
 
-    IEnumerator BoostDurationCoroutine(BicycleController bike)
+    IEnumerator ResetBoostCooldown()
     {
-        float elapsedTime = 0f;
-        float initialTopSpeed = bike.topSpeed;
-
-        while (elapsedTime < boostDuration)
-        {
-            bike.topSpeed = Mathf.Lerp(initialTopSpeed, initialTopSpeed * speedMultiplier, elapsedTime / boostDuration);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        bike.topSpeed = initialTopSpeed;
+        yield return new WaitForSeconds(boostDuration);
         isBoosting = false;
     }
 

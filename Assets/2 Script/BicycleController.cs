@@ -75,6 +75,10 @@ namespace SBPScripts
         [Tooltip("Bantuan rotasi belokan fisik agar sepeda tidak seret saat belok")]
         public float steerTorqueAssistance = 3.0f;
 
+        [Header("Ground Detection")]
+        [Tooltip("LayerMask tanah/terrain untuk deteksi ground raycast (abaikan triggers)")]
+        public LayerMask groundLayer = ~0;
+
         public AnimationCurve leanCurve;
         public float torque, topSpeed;
 
@@ -182,6 +186,15 @@ namespace SBPScripts
             {
                 isAIControlled = false;
                 Debug.Log($"{name} = Player Detected (Tag: {tag})");
+
+                // Sync kontrol dari GraphicsSettingsManager (Saved PlayerPrefs Settings)
+                if (GraphicsSettingsManager.Instance != null)
+                {
+                    steerSensitivity = GraphicsSettingsManager.Instance.steerSensitivity;
+                    steerReturnSpeed = GraphicsSettingsManager.Instance.steerSensitivity;
+                    instantSteering = GraphicsSettingsManager.Instance.instantSteering;
+                    enableDoubleJump = GraphicsSettingsManager.Instance.enableDoubleJump;
+                }
             }
 
             rb = GetComponent<Rigidbody>();
@@ -401,14 +414,15 @@ namespace SBPScripts
                 wheelFrictionSettings.rPhysicMaterial.bounceCombine = PhysicsMaterialCombine.Minimum;
             }
 
-            if (Physics.Raycast(fPhysicsWheel.transform.position, Vector3.down, out hit, Mathf.Infinity))
+            // Raycast deteksi tanah dengan abaikan Trigger Collider
+            if (Physics.Raycast(fPhysicsWheel.transform.position, Vector3.down, out hit, 10f, groundLayer, QueryTriggerInteraction.Ignore))
                 if (hit.distance < 0.5f)
                 {
                     Vector3 velf = fPhysicsWheel.transform.InverseTransformDirection(fWheelRb.linearVelocity);
                     velf.x *= Mathf.Clamp01(1 / (wheelFrictionSettings.fFriction.x + wheelFrictionSettings.fFriction.y));
                     fWheelRb.linearVelocity = fPhysicsWheel.transform.TransformDirection(velf);
                 }
-            if (Physics.Raycast(rPhysicsWheel.transform.position, Vector3.down, out hit, Mathf.Infinity))
+            if (Physics.Raycast(rPhysicsWheel.transform.position, Vector3.down, out hit, 10f, groundLayer, QueryTriggerInteraction.Ignore))
                 if (hit.distance < 0.5f)
                 {
                     Vector3 velr = rPhysicsWheel.transform.InverseTransformDirection(rWheelRb.linearVelocity);
@@ -447,8 +461,8 @@ namespace SBPScripts
             if (rWheelRb != null && rWheelRb.linearVelocity.y > maxAllowedUpwardVelocity)
                 rWheelRb.linearVelocity = new Vector3(rWheelRb.linearVelocity.x, maxAllowedUpwardVelocity, rWheelRb.linearVelocity.z);
 
-            //AirControl
-            if (Physics.Raycast(transform.position + new Vector3(0, 1f, 0), Vector3.down, out hit, Mathf.Infinity))
+            //AirControl (Abaikan trigger collider agar tidak salah mendeteksi zona airborne/tanah)
+            if (Physics.Raycast(transform.position + new Vector3(0, 1f, 0), Vector3.down, out hit, 50f, groundLayer, QueryTriggerInteraction.Ignore))
             {
                 if (hit.distance > 2f || impactFrames > 0)
                 {
