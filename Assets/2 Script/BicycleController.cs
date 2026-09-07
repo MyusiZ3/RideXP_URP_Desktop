@@ -239,10 +239,10 @@ namespace SBPScripts
             else
             {
                 if (!sprint)
-                    currentTopSpeed = Mathf.Lerp(currentTopSpeed, topSpeed * relaxedSpeed, Time.deltaTime);
+                    currentTopSpeed = Mathf.Lerp(currentTopSpeed, topSpeed * relaxedSpeed, Time.fixedDeltaTime);
                 else
                    
-                    currentTopSpeed = Mathf.Lerp(currentTopSpeed, topSpeed, Time.deltaTime);
+                    currentTopSpeed = Mathf.Lerp(currentTopSpeed, topSpeed, Time.fixedDeltaTime);
             }
             if (airTimeCounter > maxAirTimeBeforeStabilize)
             {
@@ -330,7 +330,7 @@ namespace SBPScripts
             else if (Mathf.Floor(crankSpeed) > restingCrank)
                 crankSpeed += -6;
             else if (Mathf.Floor(crankSpeed) < restingCrank)
-                crankSpeed = Mathf.Lerp(crankSpeed, restingCrank, Time.deltaTime * 5);
+                crankSpeed = Mathf.Lerp(crankSpeed, restingCrank, Time.fixedDeltaTime * 5);
 
             crankLastQuat = crankCurrentQuat;
             cycleGeometry.crank.transform.localRotation = Quaternion.Euler(crankSpeed, 0, 0);
@@ -348,9 +348,9 @@ namespace SBPScripts
 
             //CycleOscillation
             if ((sprint && currentSpeed > 5 && isReversing == false) || isAirborne || isBunnyHopping)
-                pickUpSpeed += Time.deltaTime * 2;
+                pickUpSpeed += Time.fixedDeltaTime * 2;
             else
-                pickUpSpeed -= Time.deltaTime * 2;
+                pickUpSpeed -= Time.fixedDeltaTime * 2;
 
             pickUpSpeed = Mathf.Clamp(pickUpSpeed, 0.1f, 1);
 
@@ -430,9 +430,9 @@ namespace SBPScripts
             if (airTimeSettings.freestyle)
             {
                 if (!stuntMode && isAirborne)
-                    transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, transform.rotation.eulerAngles.y, turnLeanAmount + cycleOscillation + GroundConformity(groundConformity)), Time.deltaTime * airTimeSettings.groundSnapSensitivity);
+                    transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, transform.rotation.eulerAngles.y, turnLeanAmount + cycleOscillation + GroundConformity(groundConformity)), Time.fixedDeltaTime * airTimeSettings.groundSnapSensitivity);
                 else if (!stuntMode && !isAirborne)
-                    transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, turnLeanAmount + cycleOscillation + GroundConformity(groundConformity)), Time.deltaTime * 10 * airTimeSettings.groundSnapSensitivity);
+                    transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, turnLeanAmount + cycleOscillation + GroundConformity(groundConformity)), Time.fixedDeltaTime * 10 * airTimeSettings.groundSnapSensitivity);
             }
             else
             {

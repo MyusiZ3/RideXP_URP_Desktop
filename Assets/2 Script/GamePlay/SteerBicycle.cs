@@ -35,16 +35,19 @@ public class SteerBicycle : MonoBehaviour
 
     void Update()
     {
-        // Mengambil input steering horizontal (misalnya tombol kiri/kanan)
+        // Sampel input steering horizontal pada Update() agar responsif
         customSteerAxis = Input.GetAxis("Horizontal");
+    }
 
-        // Menghitung pengurangan steering berdasarkan kecepatan
+    void FixedUpdate()
+    {
+        // Menghitung pengurangan steering berdasarkan kecepatan di FixedUpdate
         MaxSteeringReductor();
 
         // Menghitung sudut belokan berdasarkan input dan sensitivitas
         float turnAngle = customSteerAxis * current_maxSteeringAngle * steerSensitivity;
 
-        // Terapkan rotasi pada roda depan sepeda
+        // Terapkan rotasi pada roda depan sepeda di FixedUpdate
         ApplySteering(turnAngle);
     }
 
@@ -67,8 +70,8 @@ public class SteerBicycle : MonoBehaviour
             frontWheelTransform.localRotation = Quaternion.Euler(0, turnAngle, 0);
         }
 
-        // Menetapkan sudut belokan sepeda sesuai dengan input steering
-        currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * customSteerAxis, turnSmoothing * 0.1f);
+        // Menetapkan sudut belokan sepeda sesuai dengan input steering (menggunakan Time.fixedDeltaTime)
+        currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * customSteerAxis, turnSmoothing * 10f * Time.fixedDeltaTime);
     }
 
     // Update visual handle (jika diperlukan untuk visualisasi steering)
