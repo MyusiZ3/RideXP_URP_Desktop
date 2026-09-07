@@ -1,0 +1,313 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-4244419809363543884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d309d34ca22cb5d4f91a635395eded23, type: 3}
+  m_Name: UniStormCloudShadowsFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    isEnabled: 1
+    renderPassEvent: 400
+    Fade: 0.33
+    CloudShadowTexture: {fileID: 0}
+    ShadowColor: {r: 1, g: 1, b: 1, a: 1}
+    CloudTextureScale: 0.1
+    BottomThreshold: 0
+    TopThreshold: 1
+    ShadowIntensity: 1
+    ScreenSpaceShadowsMaterial: {fileID: 0}
+    ShadowDirection: {x: 0, y: 0, z: 0}
+    m_CurrentCloudHeight: 0
+    CloudSpeed: 0
+    NormalY: 0
+--- !u!114 &-3518624201949712499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b47d9523e62ddd48b8ae2826026b4f3, type: 3}
+  m_Name: MoonUniStormSunShaftsFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    isEnabled: 1
+    renderPassEvent: 500
+    resolution: 1
+    screenBlendMode: 0
+    celestialName: UniStorm Moon
+    radialBlurIterations: 3
+    sunColor: {r: 0.31764707, g: 0.32156864, b: 0.32156864, a: 1}
+    sunThreshold: {r: 0.13333334, g: 0.13333334, b: 0.13333334, a: 1}
+    sunShaftBlurRadius: 3.32
+    sunShaftIntensity: 1
+    maxRadius: 0.3
+    useDepthTexture: 1
+--- !u!114 &-1788228495942732033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95efe95ba4d94224a814355ac83dd21e, type: 3}
+  m_Name: UniStormCloudsRendererFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+--- !u!114 &-1053929814300991703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b47d9523e62ddd48b8ae2826026b4f3, type: 3}
+  m_Name: SunUniStormSunShaftsFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    isEnabled: 1
+    renderPassEvent: 500
+    resolution: 1
+    screenBlendMode: 0
+    celestialName: UniStorm Sun
+    radialBlurIterations: 1
+    sunColor: {r: 0.4528302, g: 0.43659666, b: 0.41224635, a: 1}
+    sunThreshold: {r: 0.5568628, g: 0.5372549, b: 0.48235294, a: 1}
+    sunShaftBlurRadius: 1.1
+    sunShaftIntensity: 1
+    maxRadius: 0.5
+    useDepthTexture: 1
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de640fe3d0db1804a85f9fc8f5cadab6, type: 3}
+  m_Name: PC_Renderer
+  m_EditorClassIdentifier: 
+  debugShaders:
+    debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7, type: 3}
+    hdrDebugViewPS: {fileID: 4800000, guid: 573620ae32aec764abd4d728906d2587, type: 3}
+    probeVolumeSamplingDebugComputeShader: {fileID: 7200000, guid: 53626a513ea68ce47b59dc1299fe3959, type: 3}
+  probeVolumeResources:
+    probeVolumeDebugShader: {fileID: 4800000, guid: e5c6678ed2aaa91408dd3df699057aae, type: 3}
+    probeVolumeFragmentationDebugShader: {fileID: 4800000, guid: 03cfc4915c15d504a9ed85ecc404e607, type: 3}
+    probeVolumeOffsetDebugShader: {fileID: 4800000, guid: 53a11f4ebaebf4049b3638ef78dc9664, type: 3}
+    probeVolumeSamplingDebugShader: {fileID: 4800000, guid: 8f96cd657dc40064aa21efcc7e50a2e7, type: 3}
+    probeSamplingDebugMesh: {fileID: -3555484719484374845, guid: 57d7c4c16e2765b47a4d2069b311bffe, type: 3}
+    probeSamplingDebugTexture: {fileID: 2800000, guid: 24ec0e140fb444a44ab96ee80844e18e, type: 3}
+    probeVolumeBlendStatesCS: {fileID: 7200000, guid: b9a23f869c4fd45f19c5ada54dd82176, type: 3}
+  m_RendererFeatures:
+  - {fileID: 7833122117494664109}
+  - {fileID: -4244419809363543884}
+  - {fileID: 3491751484931838593}
+  - {fileID: -1053929814300991703}
+  - {fileID: -3518624201949712499}
+  - {fileID: -1788228495942732033}
+  m_RendererFeatureMap: ad6b866f10d7b46c
+  m_UseNativeRenderPass: 1
+  xrSystemData: {fileID: 0}
+  postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
+  m_AssetVersion: 2
+  m_OpaqueLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_TransparentLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_DefaultStencilState:
+    overrideStencilState: 0
+    stencilReference: 1
+    stencilCompareFunction: 3
+    passOperation: 2
+    failOperation: 0
+    zFailOperation: 0
+  m_ShadowTransparentReceive: 1
+  m_RenderingMode: 2
+  m_DepthPrimingMode: 0
+  m_CopyDepthMode: 0
+  m_DepthAttachmentFormat: 0
+  m_DepthTextureFormat: 0
+  m_AccurateGbufferNormals: 0
+  m_IntermediateTextureMode: 0
+--- !u!114 &1368089765590607228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d225a4cad17704386835b918c7b8ec, type: 3}
+  m_Name: NewBlitVolumeFogSRP
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    extraCameraID: 0
+    isForDualCameras: 0
+    isForReflections: 0
+    blendVolumeLighting: 0
+    _FogColor:
+      r: 0.5
+      g: 0.5
+      b: 0.5
+      a: 0.5
+    noiseTexture: {fileID: 0}
+    _startDistance: 30
+    _fogHeight: 0.75
+    _fogDensity: 1
+    _cameraRoll: 0
+    _cameraDiff: {x: 0, y: 0, z: 0, w: 0}
+    _cameraTiltSign: 1
+    heightDensity: 1
+    noiseDensity: 1
+    noiseScale: 1
+    noiseThickness: 1
+    noiseSpeed: {x: 1, y: 1, z: 1}
+    occlusionDrop: 1
+    occlusionExp: 1
+    noise3D: 1
+    startDistance: 1
+    luminance: 1
+    lumFac: 1
+    ScatterFac: 1
+    TurbFac: 1
+    HorizFac: 1
+    turbidity: 1
+    reileigh: 1
+    mieCoefficient: 1
+    mieDirectionalG: 1
+    bias: 1
+    contrast: 1
+    TintColor:
+      r: 1
+      g: 1
+      b: 1
+      a: 1
+    TintColorK: {x: 0, y: 0, z: 0}
+    TintColorL: {x: 0, y: 0, z: 0}
+    Sun: {x: 0, y: 0, z: 0, w: 0}
+    FogSky: 1
+    ClearSkyFac: 1
+    PointL: {x: 0, y: 0, z: 0, w: 0}
+    PointLParams: {x: 0, y: 0, z: 0, w: 0}
+    _useRadialDistance: 0
+    _fadeToSkybox: 1
+    inheritFromController: 1
+    enableFog: 1
+    Event: 400
+    blitMaterial: {fileID: 2100000, guid: a8568e1a8beabd648ac8c844140e2163, type: 2}
+    blitMaterialPassIndex: -1
+    destination: 0
+    textureId: _BlitPassTexture
+    blend: 0.5
+    resolution: 1
+    screenBlendMode: 0
+    sunTransform: {x: 0, y: 0, z: 0}
+    radialBlurIterations: 2
+    sunColor:
+      r: 1
+      g: 1
+      b: 1
+      a: 1
+    sunThreshold:
+      r: 0.87
+      g: 0.74
+      b: 0.65
+      a: 1
+    sunShaftBlurRadius: 2.5
+    sunShaftIntensity: 1.15
+    maxRadius: 0.75
+    useDepthTexture: 1
+  m_Intensity: 0
+--- !u!114 &3491751484931838593
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1b1f8e52a528414eb09a2a63238d9d6, type: 3}
+  m_Name: UniStormAtmosphericFogFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    isEnabled: 1
+    renderPassEvent: 400
+    NoiseTexture: {fileID: 2800000, guid: e09deeeaec0a3c547a3b72ad3d615255, type: 2}
+    Dither: 0
+    distanceFog: 1
+    useRadialDistance: 1
+    heightFog: 0
+    height: 1
+    heightDensity: 2
+    startDistance: 0
+    SunColor: {r: 0.62547266, g: 0.62364066, b: 0.62103206, a: 1}
+    MoonColor: {r: 0.33023313, g: 0.36793935, b: 0.38679242, a: 1}
+    TopColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomColor: {r: 0.3305191, g: 0.36528018, b: 0.40975723, a: 1}
+    BlendHeight: 0.014714679
+    FogGradientHeight: 0.5
+    SunIntensity: 0.031115485
+    MoonIntensity: -0.004818923
+    SunFalloffIntensity: 9.4
+    SunControl: 1.0007684
+    MoonControl: 0
+--- !u!114 &7833122117494664109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f62c9c65cf3354c93be831c8bc075510, type: 3}
+  m_Name: ScreenSpaceAmbientOcclusion
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  m_Settings:
+    AOMethod: 0
+    Downsample: 0
+    AfterOpaque: 0
+    Source: 1
+    NormalSamples: 1
+    Intensity: 0.4
+    DirectLightingStrength: 0.25
+    Radius: 0.3
+    Samples: 1
+    BlurQuality: 0
+    Falloff: 100
+    SampleCount: -1
+  m_BlueNoise256Textures:
+  - {fileID: 2800000, guid: 36f118343fc974119bee3d09e2111500, type: 3}
+  - {fileID: 2800000, guid: 4b7b083e6b6734e8bb2838b0b50a0bc8, type: 3}
+  - {fileID: 2800000, guid: c06cc21c692f94f5fb5206247191eeee, type: 3}
+  - {fileID: 2800000, guid: cb76dd40fa7654f9587f6a344f125c9a, type: 3}
+  - {fileID: 2800000, guid: e32226222ff144b24bf3a5a451de54bc, type: 3}
+  - {fileID: 2800000, guid: 3302065f671a8450b82c9ddf07426f3a, type: 3}
+  - {fileID: 2800000, guid: 56a77a3e8d64f47b6afe9e3c95cb57d5, type: 3}
+  m_Shader: {fileID: 4800000, guid: 0849e84e3d62649e8882e9d6f056a017, type: 3}
