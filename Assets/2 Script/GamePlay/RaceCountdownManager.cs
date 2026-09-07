@@ -208,11 +208,14 @@ public class RaceCountdownManager : MonoBehaviour
 
             if (playerRb != null)
             {
-                playerRb.isKinematic = !canMove;
                 if (!canMove) {
-                    playerRb.linearVelocity = Vector3.zero;
-                    playerRb.angularVelocity = Vector3.zero;
+                    if (!playerRb.isKinematic)
+                    {
+                        playerRb.linearVelocity = Vector3.zero;
+                        playerRb.angularVelocity = Vector3.zero;
+                    }
                 }
+                playerRb.isKinematic = !canMove;
             }
 
             if (!canMove) // Aksi tambahan saat MENGHENTIKAN player
@@ -256,11 +259,14 @@ public class RaceCountdownManager : MonoBehaviour
 
                     if (npcRb != null)
                     {
-                        npcRb.isKinematic = !canMove;
                         if (!canMove) {
-                            npcRb.linearVelocity = Vector3.zero;
-                            npcRb.angularVelocity = Vector3.zero;
+                            if (!npcRb.isKinematic)
+                            {
+                                npcRb.linearVelocity = Vector3.zero;
+                                npcRb.angularVelocity = Vector3.zero;
+                            }
                         }
+                        npcRb.isKinematic = !canMove;
                     }
 
                     if (!canMove) // Aksi tambahan saat MENGHENTIKAN NPC
