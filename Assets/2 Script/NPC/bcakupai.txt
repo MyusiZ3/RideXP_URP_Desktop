@@ -1,0 +1,485 @@
+// NPCBicycleAIController.cs (Final Fix Version + Personality)
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using SBPScripts; // Pastikan namespace ini cocok
+
+public class NPCBicycleAIController : MonoBehaviour
+{
+    public WaypointManager waypointManager;
+    public float moveSpeed = 5f;
+    public float turnSpeed = 5f;
+    public float waypointThreshold = 2f;
+    public float laneOffsetRange = 1.5f;
+    public string obstacleTag = "Obstacle";
+    public float obstacleCheckDistance = 5f;
+    public float slowDownSpeed = 2f;
+    private float lastJumpTime = -999f;
+    public float jumpCooldown = 1f; // Bisa atur di Inspector, default 1 detik
+    [Header("Jump Settings AI")] // Header baru untuk membedakan
+    public float aiJumpChargeTime = 0.2f; // Durasi AI "menahan" lompatan untuk charge
+
+    [Header("Stuck Detection Settings")]
+    [Tooltip("Waktu (detik) NPC dianggap stuck sebelum respawn")]
+    public float stuckThreshold = 5f;
+
+
+
+
+    [Header("Fall & Respawn Settings")]
+    public float fallLimitY = -10f;
+    public float flyLimitY = 100f;
+    public float respawnHeightOffset = 1.5f;
+    public float stuckAndBelowYRespawnLimit = 3f;
+    public enum NPCPersonality { Normal, Aggressive, Lazy, Zigzag }
+
+    [Header("NPC Personality")]
+    public NPCPersonality personality = NPCPersonality.Normal;
+
+    private int currentWaypointIndex = 0;
+    private List<Vector3> waypoints;
+    private Vector3 offset;
+    private Animator animator;
+    private Rigidbody rb;
+    private bool isSlowingDown = false;
+    private BicycleController bikeController; // Variabel baru untuk menyimpan referensi
+
+    private Vector3 lastPosition;
+    private float stuckTimer = 0f;
+
+    void Start()
+    {
+        if (waypointManager == null)
+        {
+            Debug.LogError("WaypointManager belum diassign pada NPC: " + gameObject.name);
+            enabled = false;
+            return;
+        }
+
+        waypoints = waypointManager.waypoints;
+        if (waypoints == null || waypoints.Count == 0)
+        {
+            Debug.LogError("WaypointManager tidak memiliki waypoints pada NPC: " + gameObject.name);
+            enabled = false;
+            return;
+        }
+
+        offset = new Vector3(Random.Range(-laneOffsetRange, laneOffsetRange), 0f, Random.Range(-laneOffsetRange, laneOffsetRange) * 0.2f);
+        animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody>();
+        lastPosition = transform.position;
+
+        // Apply personality modifiers
+        switch (personality)
+        {
+            case NPCPersonality.Aggressive:
+                moveSpeed += 2f;
+                turnSpeed += 2f;
+                break;
+            case NPCPersonality.Lazy:
+                moveSpeed *= 0.6f;
+                slowDownSpeed *= 0.6f;
+                break;
+        }
+    }
+
+    void Update()
+    {
+        if (waypoints == null || waypoints.Count == 0) return;
+
+        if (transform.position.y < fallLimitY || transform.position.y > flyLimitY)
+        {
+            HandleRespawn("Out of Bounds");
+            return;
+        }
+
+        Vector3 target = waypoints[currentWaypointIndex] + offset;
+        Vector3 direction = target - transform.position;
+        direction.y = 0;
+
+        RaycastHit hitInfo;
+        isSlowingDown = false;
+        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, transform.forward, out hitInfo, obstacleCheckDistance))
+        {
+            if (hitInfo.collider.CompareTag(obstacleTag))
+            {
+                isSlowingDown = true;
+                PerformObstacleAvoidance();
+            }
+        }
+
+        if (direction.magnitude >= 0.1f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+        }
+
+        float currentSpeed = isSlowingDown ? slowDownSpeed : moveSpeed;
+
+        if (personality == NPCPersonality.Zigzag)
+        {
+            float zigzagOffset = Mathf.Sin(Time.time * 3f) * 0.5f;
+            transform.position += (transform.forward + transform.right * zigzagOffset) * currentSpeed * Time.deltaTime;
+        }
+        else
+        {
+            transform.position += transform.forward * currentSpeed * Time.deltaTime;
+        }
+
+        if (animator != null)
+            animator.SetFloat("Speed", currentSpeed);
+
+        float distanceToTarget = Vector3.Distance(new Vector3(transform.position.x, target.y, transform.position.z), target);
+        if (distanceToTarget < waypointThreshold)
+        {
+            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Count;
+            offset = new Vector3(Random.Range(-laneOffsetRange, laneOffsetRange), 0f, Random.Range(-laneOffsetRange, laneOffsetRange) * 0.2f);
+            lastPosition = transform.position;
+            stuckTimer = 0f;
+        }
+
+        if (Vector3.Distance(transform.position, lastPosition) < 0.1f && currentSpeed > 0.1f)
+        {
+            stuckTimer += Time.deltaTime;
+            // Debug.Log($"{gameObject.name} stuckTimer: {stuckTimer:F2}, pos.y: {transform.position.y:F2}");
+
+            if (stuckTimer >= stuckThreshold)
+            {
+                if (transform.position.y < stuckAndBelowYRespawnLimit)
+                    HandleRespawn("Stuck + Low Y");
+                else
+                    HandleRespawn("Stuck (any Y, fallback)");
+                return;
+            }
+        }
+        else
+        {
+            stuckTimer = 3f;
+            if (Vector3.Distance(transform.position, lastPosition) >= 1f)
+                lastPosition = transform.position;
+        }
+    }
+    // --- Metode Baru untuk menginisiasi urutan lompat ---
+    void AttemptSingleJumpSequence()
+    {
+        if (Time.time < lastJumpTime + jumpCooldown)
+        {
+            // Debug.Log($"{gameObject.name} AttemptSingleJumpSequence on cooldown.");
+            return; // Masih dalam cooldown
+        }
+        // Debug.Log($"{gameObject.name} Mencoba Urutan Lompat Tunggal.");
+        if (TryGetComponent(out BicycleController bc))
+        {
+            StartCoroutine(ExecuteJumpSequence(bc));
+            lastJumpTime = Time.time; // Perbarui waktu lompat terakhir
+        }
+        else Debug.LogWarning($"{gameObject.name} BicycleController tidak ditemukan untuk lompat tunggal.");
+    }
+
+    void AttemptDoubleJumpSequence()
+    {
+        if (Time.time < lastJumpTime + jumpCooldown) // Cooldown untuk lompatan pertama dari double jump
+        {
+            // Debug.Log($"{gameObject.name} AttemptDoubleJumpSequence on cooldown for first hop.");
+            return; // Masih dalam cooldown
+        }
+        // Debug.Log($"{gameObject.name} Mencoba Urutan Lompat Ganda.");
+        if (TryGetComponent(out BicycleController bc))
+        {
+            StartCoroutine(ExecuteDoubleJumpInternal(bc)); // Coroutine internal untuk menangani dua lompatan
+            lastJumpTime = Time.time; // Cooldown dimulai setelah menginisiasi urutan lompat ganda
+        }
+        else Debug.LogWarning($"{gameObject.name} BicycleController tidak ditemukan untuk lompat ganda.");
+    }
+
+    // Coroutine Inti untuk Urutan Input Lompat AI
+    IEnumerator ExecuteJumpSequence(BicycleController bc)
+    {
+        if (bc == null) {
+            Debug.LogError($"{gameObject.name} ExecuteJumpSequence: BicycleController is null!");
+            yield break;
+        }
+
+        Debug.Log($"[{Time.timeSinceLevelLoad:F2}s] {gameObject.name} JUMP SEQ: State 1 (Charge)");
+        bc.bunnyHopInputState = 1;
+        yield return new WaitForSeconds(aiJumpChargeTime);
+
+        Debug.Log($"[{Time.timeSinceLevelLoad:F2}s] {gameObject.name} JUMP SEQ: State -1 (Release)");
+        bc.bunnyHopInputState = -1;
+        yield return null; 
+
+        Debug.Log($"[{Time.timeSinceLevelLoad:F2}s] {gameObject.name} JUMP SEQ: State 0 (Reset)");
+        bc.bunnyHopInputState = 0;
+    }
+
+    // Coroutine untuk menangani dua bagian dari Lompat Ganda
+    IEnumerator ExecuteDoubleJumpInternal(BicycleController bc)
+    {
+        // Lompatan pertama
+        // Debug.Log($"{gameObject.name} Lompat Ganda - Lompatan Pertama");
+        yield return StartCoroutine(ExecuteJumpSequence(bc));
+
+        // Jeda asli dari skrip Anda (0.3 detik)
+        yield return new WaitForSeconds(0.3f);
+
+        // Lompatan kedua
+        // Debug.Log($"{gameObject.name} Lompat Ganda - Lompatan Kedua");
+        yield return StartCoroutine(ExecuteJumpSequence(bc));
+    }
+    // --- Akhir dari Metode Sistem Lompat ---
+
+    void PerformObstacleAvoidance()
+    {
+        float choice = Random.value;
+        Debug.Log($"{gameObject.name} avoid mode: {choice:F2}");
+
+        if (choice < 0.33f)
+        {
+            Debug.Log($"{gameObject.name} is turning");
+            transform.Rotate(0, Random.Range(-45f, 45f), 0);
+        }
+        else if (choice < 0.66f)
+        {
+            Debug.Log($"{gameObject.name} is trying to jump");
+            TryJump();
+        }
+        else
+        {
+            Debug.Log($"{gameObject.name} is attempting double jump");
+            StartCoroutine(DelayedDoubleJump());
+        }
+    }
+
+
+    void TryJump()
+    {
+        if (TryGetComponent(out BicycleController bc))
+            bc.bunnyHopInputState = 1;
+    }
+
+    IEnumerator DelayedDoubleJump()
+    {
+        if (TryGetComponent(out BicycleController bc))
+        {
+            bc.bunnyHopInputState = 1;
+            yield return new WaitForSeconds(0.3f);
+            bc.bunnyHopInputState = 1;
+        }
+    }
+
+    void HandleRespawn(string reason)
+    {
+        Debug.Log($"{gameObject.name} respawning due to: {reason}");
+        if (waypoints == null || waypoints.Count == 0)
+        {
+            transform.position = Vector3.up * respawnHeightOffset;
+            return;
+        }
+
+        Vector3 basePoint = waypoints[Mathf.Clamp(currentWaypointIndex, 0, waypoints.Count - 1)];
+        Vector3 respawnPosition = basePoint + Vector3.up * respawnHeightOffset;
+
+        if (Physics.Raycast(basePoint + Vector3.up * 50f, Vector3.down, out RaycastHit hit, 100f))
+        {
+            respawnPosition = hit.point + Vector3.up * respawnHeightOffset;
+        }
+
+        Vector3 directionToNext = (waypoints[(currentWaypointIndex + 1) % waypoints.Count] - basePoint).normalized;
+        directionToNext.y = 0;
+
+        transform.position = respawnPosition;
+        if (directionToNext != Vector3.zero)
+            transform.rotation = Quaternion.LookRotation(directionToNext);
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero; // DIPERBAIKI
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        stuckTimer = 0f;
+        isSlowingDown = false;
+        lastPosition = transform.position;
+    }
+    void OnTriggerEnter(Collider other)
+    {
+        // Cek tag NPC Anda. Jika collider yang masuk adalah NPC itu sendiri, abaikan.
+        if (other.CompareTag("NPCRider") && other.gameObject == this.gameObject)
+        {
+            return;
+        }
+
+        if (other.CompareTag("ObstacleTrigger")) // Misal ini adalah "Zona Lompat"
+        {
+            Debug.Log($"{gameObject.name} memasuki zona lompat: {other.name}");
+            AttemptSingleJumpSequence(); // Gunakan metode baru
+        }
+        else if (other.CompareTag("DoubleJumpZone"))
+        {
+            Debug.Log($"{gameObject.name} memasuki zona lompat ganda: {other.name}");
+            AttemptDoubleJumpSequence(); // Gunakan metode baru
+        }
+        else if (other.CompareTag("TurnTrigger"))
+        {
+            Debug.Log($"{gameObject.name} memasuki zona belok: {other.name}, belok instan.");
+            // Untuk belok, cooldown mungkin juga berguna jika tidak ingin terlalu sering
+            if (Time.time > lastJumpTime + jumpCooldown) // Menggunakan jumpCooldown untuk trigger belok juga
+            {
+                transform.Rotate(0, Random.Range(-45f, 45f), 0); // Belok instan
+                lastJumpTime = Time.time; // Perbarui waktu untuk cooldown belok
+            }
+        }
+        else if (other.CompareTag("SpeedBoost"))
+        {
+            StartCoroutine(SpeedBoostRoutine());
+        }
+        else if (other.CompareTag("BranchPoint"))
+        {
+            var branch = other.GetComponent<BranchSelector>();
+            if (branch != null)
+                Debug.Log(gameObject.name + " bertemu BranchPoint: " + other.name);
+        }
+    }
+    void OnTriggerStay(Collider other)
+    {
+        // Cek tag NPC Anda. Jika collider yang masuk adalah NPC itu sendiri, abaikan.
+        if (other.CompareTag("NPCRider") && other.gameObject == this.gameObject)
+        {
+            return;
+        }
+
+        // Aksi berulang di trigger zone jika cooldown memungkinkan
+        if (other.CompareTag("ObstacleTrigger"))
+        {
+            // Debug.Log($"{gameObject.name} berada di zona lompat: {other.name}, mencoba lompat jika cooldown selesai.");
+            AttemptSingleJumpSequence(); // Cooldown sudah dicek di dalam metode ini
+        }
+        else if (other.CompareTag("DoubleJumpZone"))
+        {
+            // Debug.Log($"{gameObject.name} berada di zona lompat ganda: {other.name}, mencoba lompat ganda jika cooldown selesai.");
+            AttemptDoubleJumpSequence(); // Cooldown sudah dicek di dalam metode ini
+        }
+        else if (other.CompareTag("TurnTrigger"))
+        {
+            // Untuk TurnTrigger, cooldown penting agar tidak berputar terus menerus
+            if (Time.time > lastJumpTime + jumpCooldown) // Menggunakan jumpCooldown untuk trigger belok juga
+            {
+                Debug.Log($"{gameObject.name} belok ulang di zona belok: {other.name}");
+                transform.Rotate(0, Random.Range(-45f, 45f), 0); // Belok instan
+                lastJumpTime = Time.time; // Update waktu untuk menghormati cooldown
+            }
+        }
+    }
+
+
+
+    IEnumerator SpeedBoostRoutine()
+    {
+        float originalSpeed = moveSpeed;
+        moveSpeed *= 1.5f;
+        yield return new WaitForSeconds(3f);
+        moveSpeed = originalSpeed;
+    }
+
+    // Letakkan ini di dalam kelas NPCBicycleAIController.cs
+    public void SetNewPathFromSpline(RamSpline newSpline)
+    {
+        // 1. Validasi Input Awal
+        if (newSpline == null || newSpline.points == null || newSpline.points.Count == 0)
+        {
+            Debug.LogWarning("SetNewPathFromSpline dipanggil dengan spline tidak valid untuk NPC: " + gameObject.name);
+            return;
+        }
+
+        List<Vector3> newPathPoints = new List<Vector3>(newSpline.points); // Salin poin ke list baru
+
+        // 2. Inisialisasi untuk Mencari Titik Awal Terbaik
+        int bestStartingIndex = 0; // Indeks default adalah 0 (waypoint pertama)
+        if (newPathPoints.Count > 0) 
+        {
+            float minDistanceToPoint = float.MaxValue;
+            Vector3 npcPosition = transform.position;   // Posisi NPC saat ini
+            Vector3 npcsForward = transform.forward;    // Arah hadap NPC saat ini
+
+            // 3. MODIFIKASI UTAMA: Mencari Waypoint Terdekat di Jalur Baru
+            // Loop ini akan mencari titik di 'newPathPoints' yang secara geometris paling dekat dengan posisi NPC.
+            for (int i = 0; i < newPathPoints.Count; i++)
+            {
+                float distance = Vector3.Distance(npcPosition, newPathPoints[i]);
+                if (distance < minDistanceToPoint)
+                {
+                    minDistanceToPoint = distance;
+                    bestStartingIndex = i; // 'bestStartingIndex' kini menunjuk ke waypoint terdekat
+                }
+            }
+
+            // 4. MODIFIKASI UTAMA: Logika "Pintar" untuk Mencegah Putar Balik
+            // Setelah menemukan waypoint terdekat, kita cek apakah waypoint tersebut ada di depan NPC
+            // atau justru di belakangnya. Jika di belakang, kita coba lihat waypoint setelahnya.
+            if (newPathPoints.Count > 1) // Perlu minimal 2 poin untuk bisa menentukan arah segmen spline
+            {
+                // Hitung arah dari NPC ke waypoint terdekat yang ditemukan
+                Vector3 directionToClosestPoint = (newPathPoints[bestStartingIndex] - npcPosition).normalized;
+                // Hitung dot product antara arah hadap NPC dan arah ke waypoint terdekat.
+                // Jika dotProduct < 0, berarti waypoint terdekat ada di belakang NPC.
+                // Jika dotProduct > 0, berarti di depan.
+                // Jika dotProduct ~ 0, berarti di samping.
+                float dotProduct = Vector3.Dot(npcsForward, directionToClosestPoint);
+
+                // Kondisi A: Jika waypoint terdekat ada di BELAKANG NPC (dotProduct < -0.3f, angka -0.3f memberi sedikit toleransi)
+                // DAN masih ada waypoint setelah waypoint terdekat tersebut.
+                if (dotProduct < -0.3f && bestStartingIndex + 1 < newPathPoints.Count)
+                {
+                    // Kita cek arah segmen DARI waypoint terdekat KE waypoint SETELAHNYA,
+                    // relatif terhadap arah hadap NPC.
+                    Vector3 directionOfSegmentAfterClosest = (newPathPoints[bestStartingIndex + 1] - newPathPoints[bestStartingIndex]).normalized;
+                    if (Vector3.Dot(npcsForward, directionOfSegmentAfterClosest) > 0f) // Jika segmen berikutnya ini mengarah ke DEPAN NPC
+                    {
+                        // Maka, lebih baik NPC memulai dari waypoint SETELAH waypoint terdekat.
+                        bestStartingIndex = (bestStartingIndex + 1); 
+                        Debug.Log($"{gameObject.name} ({newSpline.name}): Titik terdekat di belakang, memulai dari indeks berikutnya {bestStartingIndex}");
+                    }
+                    else
+                    {
+                        // Jika titik terdekat di belakang, dan segmen setelahnya juga tidak mengarah ke depan,
+                        // maka tetap gunakan titik terdekat (meskipun mungkin perlu berputar sedikit).
+                        Debug.Log($"{gameObject.name} ({newSpline.name}): Titik terdekat di belakang ({dotProduct:F2}), tapi segmen berikutnya juga tidak ideal. Tetap di titik terdekat {bestStartingIndex}.");
+                    }
+                }
+                else // Kondisi B: Waypoint terdekat ada di depan atau di samping NPC
+                {
+                    Debug.Log($"{gameObject.name} ({newSpline.name}): Memulai dari titik terdekat di indeks {bestStartingIndex} (dotProduct: {dotProduct:F2}).");
+                }
+            }
+        } // Akhir dari blok if (newPathPoints.Count > 0)
+
+        // 5. Atur Path Baru dan Reset State NPC
+        waypoints = newPathPoints;
+        currentWaypointIndex = bestStartingIndex; // NPC akan mulai dari 'bestStartingIndex' yang sudah ditentukan
+
+        offset = new Vector3(Random.Range(-laneOffsetRange, laneOffsetRange), 0f, Random.Range(-laneOffsetRange, laneOffsetRange) * 0.2f);
+        if(transform != null) 
+            lastPosition = transform.position;
+        else if (waypoints.Count > 0) // Fallback jika transform null (sangat tidak mungkin terjadi di MonoBehaviour)
+            lastPosition = waypoints[0];
+
+        stuckTimer = 0f;
+        isSlowingDown = false;
+        // isAvoiding = false; // Reset state ini jika Anda menggunakannya
+
+        Debug.Log(gameObject.name + " menerima jalur baru: " + (newSpline.name ?? "UnnamedSpline") + " dengan " + waypoints.Count + " waypoints. Mulai dari indeks " + currentWaypointIndex);
+
+        // 6. Opsi Tambahan (dikomentari): Langsung Hadapkan NPC ke Target Baru
+        // Bagian ini bisa diaktifkan jika Anda ingin NPC langsung berputar menghadap waypoint pertama
+        // di jalur baru secara instan. Bisa membuat transisi terlihat lebih 'patah' tapi mungkin
+        // lebih cepat mengarahkan NPC. Tanpa ini, NPC akan berputar secara bertahap di frame Update berikutnya.
+        // if (waypoints.Count > currentWaypointIndex) {
+        //     Vector3 immediateTarget = waypoints[currentWaypointIndex] + offset;
+        //     Vector3 immediateDirection = (immediateTarget - transform.position);
+        //     immediateDirection.y = 0;
+        //     if (immediateDirection.sqrMagnitude > 0.01f) { // hindari look rotation ke zero vector
+        //         transform.rotation = Quaternion.LookRotation(immediateDirection.normalized);
+        //     }
+        // }
+    }
+}
