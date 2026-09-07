@@ -69,11 +69,112 @@ If you wish to restore full environment textures and weather graphics, import th
 
 ### Step 5: Hardware & Arduino Setup (Optional for Physical Bikes)
 
-1. Connect your stationary exercise bike / Arduino module via USB.
-2. Ensure the correct VCP driver (CH340 / FTDI) is installed on your operating system.
-3. Open Device Manager on Windows and note the assigned COM port (e.g., `COM3`).
-4. In Unity, select the **SerialController** game object in your active scene (`Assets/Ardity/Scripts/SerialController.cs`).
-5. Set **Port Name** to your assigned COM port and set **Baud Rate** to match your Arduino sketch (e.g., `9600` or `115200`).
+This project supports real-time hardware integration with stationary exercise bikes via Arduino / ESP microcontrollers.
+
+#### Serial Communication & Controller Script Locations
+
+1. **Ardity Serial Framework**:
+   - `Assets/Ardity/`: Contains the complete Ardity communication library (`SerialController.cs`, `SerialThread.cs`).
+2. **Active Serial Integration Code**:
+   - [`Assets/2 Script/GamePlay/RespawnManager.cs`](file:///d:/Projects/Unity/RideXP_URP%20-%20Bicycle%20-%20Main/Assets/2%20Script/GamePlay/RespawnManager.cs): Reads incoming serial messages from Arduino using `serialController.ReadSerialMessage()`. Expected serial payload format:
+     ```txt
+     POT:XXX, SPD:YYY, BTN1:Z, BTN2:W
+     ```
+   - [`Assets/2 Script/Setting/SerialOverlayTrigger.cs`](file:///d:/Projects/Unity/RideXP_URP%20-%20Bicycle%20-%20Main/Assets/2%20Script/Setting/SerialOverlayTrigger.cs): Dedicated script for direct serial communication via `System.IO.Ports.SerialPort` (COM4, 115200 baud) that listens for ESP signals (e.g. string `"mulai"`).
+3. **Backup Script References**:
+   - `Assets/2 Script/BicycleBackup.txt` & `Assets/2 Script/BicycleControllModif.txt`: Preserved code backups of the bicycle controller logic.
+
+#### Switching Between Input Modes
+
+- **Desktop Keyboard Mode (Default)**:
+  - `Assets/2 Script/BicycleController.cs` and `Assets/2 Script/GamePlay/SteerBicycle.cs` use standard Unity input axes (`Input.GetAxis("Horizontal")`, `Input.GetAxis("Vertical")`).
+- **Arduino Hardware Mode**:
+  - Connect your micro-controller via USB and verify the assigned port in Windows Device Manager.
+  - In Unity, select the **SerialController** GameObject in the scene hierarchy.
+  - Set **Port Name** (e.g., `COM3` or `COM4`) and **Baud Rate** to `115200`.
+  - Pass parsed speed/potentiometer data from `SerialController` into `BicycleController.cs` or `SteerBicycle.cs` using the implementation pattern in `RespawnManager.cs`.
+
+#### Complete Arduino / ESP Microcontroller Sketch (`.ino`)
+
+Flash the following C++ code to your Arduino UNO, Nano, or ESP board. It reads steering potentiometer, hall/reed pulse speed, jump button, and respawn button, sending formatted data at 115200 baud:
+
+```cpp
+/*
+  RideXP Bicycle Controller Firmware (Arduino / ESP32)
+  
+  Hardware Pinout:
+  - Handlebar Steering Potentiometer : Analog Pin A0 (POT: 0-1023)
+  - Wheel Cadence/Speed Sensor       : Digital Pin 2 (Reed Switch / Hall Sensor with Interrupt)
+  - Jump / BunnyHop Button           : Digital Pin 3 (Active LOW with INPUT_PULLUP)
+  - Respawn Button                   : Digital Pin 4 (Active LOW with INPUT_PULLUP)
+
+  Baud Rate: 115200
+  Payload Format: "POT:<0-1023>, SPD:<RPM>, BTN1:<0/1>, BTN2:<0/1>"
+*/
+
+#define STEER_POT_PIN    A0
+#define REED_SENSOR_PIN  2
+#define JUMP_BTN_PIN     3
+#define RESPAWN_BTN_PIN  4
+
+volatile unsigned long lastPulseTime = 0;
+volatile unsigned long pulseInterval = 0;
+
+unsigned long lastSerialTime = 0;
+const unsigned long SERIAL_INTERVAL = 33; // Send data at ~30 FPS (33ms)
+
+void IRAM_ATTR pulseISR() {
+  unsigned long now = millis();
+  if (now - lastPulseTime > 40) { // 40ms debounce filter
+    pulseInterval = now - lastPulseTime;
+    lastPulseTime = now;
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(STEER_POT_PIN, INPUT);
+  pinMode(REED_SENSOR_PIN, INPUT_PULLUP);
+  pinMode(JUMP_BTN_PIN, INPUT_PULLUP);
+  pinMode(RESPAWN_BTN_PIN, INPUT_PULLUP);
+
+  attachInterrupt(digitalPinToInterrupt(REED_SENSOR_PIN), pulseISR, FALLING);
+}
+
+void loop() {
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - lastSerialTime >= SERIAL_INTERVAL) {
+    lastSerialTime = currentMillis;
+
+    // 1. Read handlebar steering potentiometer (0 - 1023)
+    int potValue = analogRead(STEER_POT_PIN);
+
+    // 2. Calculate wheel speed / RPM from interrupt interval
+    int speedValue = 0;
+    if (currentMillis - lastPulseTime < 2000 && pulseInterval > 0) {
+      speedValue = (int)(60000.0 / pulseInterval); // Convert to RPM
+    } else {
+      speedValue = 0; // Bike is stationary
+    }
+
+    // 3. Read digital buttons (Pressed = 1, Released = 0)
+    int jumpState = (digitalRead(JUMP_BTN_PIN) == LOW) ? 1 : 0;      // BTN1 (Jump/BunnyHop)
+    int respawnState = (digitalRead(RESPAWN_BTN_PIN) == LOW) ? 1 : 0; // BTN2 (Respawn)
+
+    // 4. Output serial payload expected by Unity RespawnManager & SerialController
+    Serial.print("POT:");
+    Serial.print(potValue);
+    Serial.print(", SPD:");
+    Serial.print(speedValue);
+    Serial.print(", BTN1:");
+    Serial.print(jumpState);
+    Serial.print(", BTN2:");
+    Serial.println(respawnState);
+  }
+}
+```
 
 ---
 
