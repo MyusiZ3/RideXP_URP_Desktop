@@ -233,18 +233,25 @@ public class RespawnManager : MonoBehaviour
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
         {
-            player.transform.position = lastRespawnPoint;  // Pindahkan posisi pemain
-            player.transform.rotation = lastRespawnRotation;  // Set rotasi pemain
+            player.transform.position = lastRespawnPoint;  // Pindahkan posisi pemain
+            player.transform.rotation = lastRespawnRotation;  // Set rotasi pemain
 
-            // Penting: Jika pemain memiliki komponen Rigidbody, reset velocity-nya
-            // Ini mencegah pemain mental atau memiliki sisa momentum setelah respawn
-            Rigidbody rb = player.GetComponent<Rigidbody>();
-            if (rb != null)
+            // Reset seluruh Rigidbody komponen & anak objek (roda depan, roda belakang, bodi)
+            Rigidbody[] allRbs = player.GetComponentsInChildren<Rigidbody>();
+            foreach (Rigidbody r in allRbs)
             {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                Debug.Log("Rigidbody velocity dan angularVelocity pemain direset.");
+                r.linearVelocity = Vector3.zero;
+                r.angularVelocity = Vector3.zero;
             }
+
+            // Panggil ResetPhysicsState pada BicycleController jika ada
+            SBPScripts.BicycleController controller = player.GetComponent<SBPScripts.BicycleController>();
+            if (controller != null)
+            {
+                controller.ResetPhysicsState();
+            }
+
+            Debug.Log("Seluruh Rigidbody velocity dan state pemain berhasil direset ke nol saat respawn.");
         }
         else
         {

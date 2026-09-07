@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Ardity (Serial Communication for Arduino + Unity)
  * Author: Daniel Wilches <dwilches@gmail.com>
  *
@@ -43,6 +43,9 @@ public class SerialController : MonoBehaviour
              "New messages will be discarded.")]
     public int maxUnreadMessages = 1;
 
+    [Tooltip("Check to enable Serial Communication thread (Disable for Desktop Mode)")]
+    public bool enableSerialCommunication = false;
+
     // Constants used to mark the start and end of a connection. There is no
     // way you can generate clashing messages from your serial device, as I
     // compare the references of these strings, no their contents. So if you
@@ -63,6 +66,9 @@ public class SerialController : MonoBehaviour
     // ------------------------------------------------------------------------
     void OnEnable()
     {
+        if (!enableSerialCommunication)
+            return;
+
         serialThread = new SerialThreadLines(portName, 
                                              baudRate, 
                                              reconnectionDelay,
@@ -107,6 +113,9 @@ public class SerialController : MonoBehaviour
     // ------------------------------------------------------------------------
     void Update()
     {
+        if (!enableSerialCommunication || serialThread == null)
+            return;
+
         // If the user prefers to poll the messages instead of receiving them
         // via SendMessage, then the message listener should be null.
         if (messageListener == null)
@@ -132,6 +141,9 @@ public class SerialController : MonoBehaviour
     // ------------------------------------------------------------------------
     public string ReadSerialMessage()
     {
+        if (!enableSerialCommunication || serialThread == null)
+            return null;
+
         // Read the next message from the queue
         return (string)serialThread.ReadMessage();
     }
@@ -142,6 +154,9 @@ public class SerialController : MonoBehaviour
     // ------------------------------------------------------------------------
     public void SendSerialMessage(string message)
     {
+        if (!enableSerialCommunication || serialThread == null)
+            return;
+
         serialThread.SendMessage(message);
     }
 
