@@ -1,14 +1,14 @@
 # Unity standard .gitignore
 # Ignore Unity temporary, cache, and build directories
-/[Ll]library/
-/[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
-/[Bb]uilds/
-/[Ll]ogs/
-/[Uu]ser[Ss]ettings/
-/[Mm]emoryCaptures/
-/[Rr]ecordings/
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+MemoryCaptures/
+Recordings/
 
 # Visual Studio / IDE cache and project files
 .vs/
@@ -57,11 +57,11 @@ desktop.ini
 *.bytes
 
 # Heavy 3rd-party Asset Store Vendor Plugins & Terrain Packs (Ignore to keep GitHub repo lightweight without Git LFS)
-/Assets/7 Environment/
-/Assets/Procedural Worlds/
-/Assets/Gaia User Data/
-/Assets/UniStorm Weather System/
-/Assets/VolumetricLights/
-/Assets/VolumetricLightsBundle/
-/Assets/ANIMALS FULL PACK/
-/Assets/_TerrainAutoUpgrade/
+Assets/7 Environment/
+Assets/Procedural Worlds/
+Assets/Gaia User Data/
+Assets/UniStorm Weather System/
+Assets/VolumetricLights/
+Assets/VolumetricLightsBundle/
+Assets/ANIMALS FULL PACK/
+Assets/_TerrainAutoUpgrade/
