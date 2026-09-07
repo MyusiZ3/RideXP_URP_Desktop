@@ -17,6 +17,7 @@
 !.vscode/launch.json
 .idea/
 .gradle/
+.agents/
 
 ExportedObj/
 .consulo/
