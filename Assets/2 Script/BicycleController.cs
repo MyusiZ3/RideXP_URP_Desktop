@@ -62,7 +62,19 @@ namespace SBPScripts
         [Tooltip("Steer Angle over Speed")]
         public AnimationCurve steerAngle;
         public float axisAngle;
-    
+
+        [Header("Steering Tuning")]
+        [Tooltip("Ceklis jika ingin menekan A/D langsung memutar stang 100% instan tanpa jeda ramp-up hold")]
+        public bool instantSteering = false;
+        [Tooltip("Sensitivitas ramp-up belokan keyboard (makin tinggi makin lincah/responsif)")]
+        public float steerSensitivity = 15f;
+        [Tooltip("Kecepatan stang kembali lurus saat tombol dilepas")]
+        public float steerReturnSpeed = 15f;
+        [Tooltip("Penguat sudut belok stang")]
+        public float steerAngleMultiplier = 1.3f;
+        [Tooltip("Bantuan rotasi belokan fisik agar sepeda tidak seret saat belok")]
+        public float steerTorqueAssistance = 3.0f;
+
         public AnimationCurve leanCurve;
         public float torque, topSpeed;
 
@@ -144,6 +156,13 @@ namespace SBPScripts
         public float bunnyHopAmount;
         // The upward force the rider can bunny hop with. 
         public float bunnyHopStrength;
+
+        [Header("Double Jump Settings")]
+        [Tooltip("Enable or disable double jump feature in the air")]
+        public bool enableDoubleJump = false; // Checklist di Inspector
+        public float doubleJumpForce = 8f;   // Gaya dorong double jump ke atas
+        private bool canDoubleJump = false;   // Status tracker apakah double jump bisa digunakan
+
         public WayPointSystem wayPointSystem;
         public AirTimeSettings airTimeSettings;
 
@@ -198,11 +217,19 @@ namespace SBPScripts
         void FixedUpdate()
         {
             float currentSpeed = rb.linearVelocity.magnitude;
+            float effectiveSteerAngle = steerAngle.Evaluate(currentSpeed) * steerAngleMultiplier;
+
+            // Bantuan rotasi belokan fisik agar sepeda lincah dan tidak seret saat belok
+            if (!isAirborne && Mathf.Abs(customSteerAxis) > 0.05f && currentSpeed > 0.3f)
+            {
+                float turnTorque = customSteerAxis * (currentSpeed * 0.15f + 3f) * steerTorqueAssistance;
+                rb.AddTorque(Vector3.up * turnTorque, ForceMode.Acceleration);
+            }
 
             // 1. Update fork normal dari steer
             cycleGeometry.lowerFork.transform.localRotation = Quaternion.Euler(
                 0,
-                customSteerAxis * steerAngle.Evaluate(currentSpeed) + oscillationSteerEffect * 5,
+                customSteerAxis * effectiveSteerAngle + oscillationSteerEffect * 5,
                 customSteerAxis * -axisAngle
             ) * initialLowerForkLocalRotaion;
 
@@ -224,7 +251,7 @@ namespace SBPScripts
 
 
             //Physics based Steering Control.
-            fPhysicsWheel.transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y + customSteerAxis * steerAngle.Evaluate(rb.linearVelocity.magnitude) + oscillationSteerEffect, 0);
+            fPhysicsWheel.transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y + customSteerAxis * effectiveSteerAngle + oscillationSteerEffect, 0);
             fPhysicsWheelConfigJoint.axis = new Vector3(5, 0, 0);
 
             //Power Control. Wheel Torque + Acceleration curves
@@ -309,15 +336,15 @@ namespace SBPScripts
                 rb.centerOfMass = Vector3.zero + centerOfMassOffset;
 
             //Handles
-            cycleGeometry.handles.transform.localRotation = Quaternion.Euler(0, customSteerAxis * steerAngle.Evaluate(currentSpeed) + oscillationSteerEffect * 5, 0) * initialHandlesRotation;
+            cycleGeometry.handles.transform.localRotation = Quaternion.Euler(0, customSteerAxis * effectiveSteerAngle + oscillationSteerEffect * 5, 0) * initialHandlesRotation;
 
             //LowerFork
-            cycleGeometry.lowerFork.transform.localRotation = Quaternion.Euler(0, customSteerAxis * steerAngle.Evaluate(currentSpeed) + oscillationSteerEffect * 5, customSteerAxis * -axisAngle) * initialLowerForkLocalRotaion;
+            cycleGeometry.lowerFork.transform.localRotation = Quaternion.Euler(0, customSteerAxis * effectiveSteerAngle + oscillationSteerEffect * 5, customSteerAxis * -axisAngle) * initialLowerForkLocalRotaion;
 
             //FWheelVisual
             xQuat = Mathf.Sin(Mathf.Deg2Rad * (transform.rotation.eulerAngles.y));
             zQuat = Mathf.Cos(Mathf.Deg2Rad * (transform.rotation.eulerAngles.y));
-            cycleGeometry.fWheelVisual.transform.rotation = Quaternion.Euler(xQuat * (customSteerAxis * -axisAngle), customSteerAxis * steerAngle.Evaluate(currentSpeed) + oscillationSteerEffect * 5, zQuat * (customSteerAxis * -axisAngle));
+            cycleGeometry.fWheelVisual.transform.rotation = Quaternion.Euler(xQuat * (customSteerAxis * -axisAngle), customSteerAxis * effectiveSteerAngle + oscillationSteerEffect * 5, zQuat * (customSteerAxis * -axisAngle));
             cycleGeometry.fWheelVisual.transform.GetChild(0).transform.localRotation = cycleGeometry.RWheel.transform.rotation;
 
             //Crank
@@ -358,11 +385,21 @@ namespace SBPScripts
             turnLeanAmount = -leanCurve.Evaluate(customLeanAxis) * Mathf.Clamp(currentSpeed * 0.1f, 0, 1);
             oscillationSteerEffect = cycleOscillation * Mathf.Clamp01(customAccelerationAxis) * (oscillationAffectSteerRatio * (Mathf.Clamp(topSpeed / currentSpeed, 1f, 1.5f)));
 
-            //FrictionSettings
-            wheelFrictionSettings.fPhysicMaterial.staticFriction = wheelFrictionSettings.fFriction.x;
-            wheelFrictionSettings.fPhysicMaterial.dynamicFriction = wheelFrictionSettings.fFriction.y;
-            wheelFrictionSettings.rPhysicMaterial.staticFriction = wheelFrictionSettings.rFriction.x;
-            wheelFrictionSettings.rPhysicMaterial.dynamicFriction = wheelFrictionSettings.rFriction.y;
+            //Friction & Bounce Settings
+            if (wheelFrictionSettings.fPhysicMaterial != null)
+            {
+                wheelFrictionSettings.fPhysicMaterial.staticFriction = wheelFrictionSettings.fFriction.x;
+                wheelFrictionSettings.fPhysicMaterial.dynamicFriction = wheelFrictionSettings.fFriction.y;
+                wheelFrictionSettings.fPhysicMaterial.bounciness = 0f;
+                wheelFrictionSettings.fPhysicMaterial.bounceCombine = PhysicsMaterialCombine.Minimum;
+            }
+            if (wheelFrictionSettings.rPhysicMaterial != null)
+            {
+                wheelFrictionSettings.rPhysicMaterial.staticFriction = wheelFrictionSettings.rFriction.x;
+                wheelFrictionSettings.rPhysicMaterial.dynamicFriction = wheelFrictionSettings.rFriction.y;
+                wheelFrictionSettings.rPhysicMaterial.bounciness = 0f;
+                wheelFrictionSettings.rPhysicMaterial.bounceCombine = PhysicsMaterialCombine.Minimum;
+            }
 
             if (Physics.Raycast(fPhysicsWheel.transform.position, Vector3.down, out hit, Mathf.Infinity))
                 if (hit.distance < 0.5f)
@@ -384,16 +421,31 @@ namespace SBPScripts
             lastVelocity = fWheelRb.linearVelocity;
             impactFrames--;
             impactFrames = Mathf.Clamp(impactFrames, 0, 15);
-            if (deceleration.y > 200 && lastDeceleration.y < -1)
+            // Hanya aktifkan impactFrames dari pendaratan vertikal (bukan dari tabrakan tembok horizontal)
+            if (deceleration.y > 200 && lastDeceleration.y < -1 && lastVelocity.y < -2f)
                 impactFrames = 30;
 
             lastDeceleration = deceleration;
 
             if (impactFrames > 0 && inelasticCollision)
             {
-                fWheelRb.linearVelocity = new Vector3(fWheelRb.linearVelocity.x, -Mathf.Abs(fWheelRb.linearVelocity.y), fWheelRb.linearVelocity.z);
-                rWheelRb.linearVelocity = new Vector3(rWheelRb.linearVelocity.x, -Mathf.Abs(rWheelRb.linearVelocity.y), rWheelRb.linearVelocity.z);
+                // Redam pantulan kecepatan vertikal positif saat mendarat agar tidak melontar ke atas atau menembus tanah
+                if (fWheelRb.linearVelocity.y > 0)
+                    fWheelRb.linearVelocity = new Vector3(fWheelRb.linearVelocity.x, fWheelRb.linearVelocity.y * 0.1f, fWheelRb.linearVelocity.z);
+                if (rWheelRb.linearVelocity.y > 0)
+                    rWheelRb.linearVelocity = new Vector3(rWheelRb.linearVelocity.x, rWheelRb.linearVelocity.y * 0.1f, rWheelRb.linearVelocity.z);
+                if (rb.linearVelocity.y > 0)
+                    rb.linearVelocity = new Vector3(rb.linearVelocity.x, rb.linearVelocity.y * 0.1f, rb.linearVelocity.z);
             }
+
+            // Safety Clamp: Cegah fisika ConfigurableJoint meledak / melontarkan sepeda ke langit saat menabrak rintangan
+            float maxAllowedUpwardVelocity = 15f;
+            if (rb.linearVelocity.y > maxAllowedUpwardVelocity)
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, maxAllowedUpwardVelocity, rb.linearVelocity.z);
+            if (fWheelRb != null && fWheelRb.linearVelocity.y > maxAllowedUpwardVelocity)
+                fWheelRb.linearVelocity = new Vector3(fWheelRb.linearVelocity.x, maxAllowedUpwardVelocity, fWheelRb.linearVelocity.z);
+            if (rWheelRb != null && rWheelRb.linearVelocity.y > maxAllowedUpwardVelocity)
+                rWheelRb.linearVelocity = new Vector3(rWheelRb.linearVelocity.x, maxAllowedUpwardVelocity, rWheelRb.linearVelocity.z);
 
             //AirControl
             if (Physics.Raycast(transform.position + new Vector3(0, 1f, 0), Vector3.down, out hit, Mathf.Infinity))
@@ -458,6 +510,18 @@ namespace SBPScripts
         {
             ApplyCustomInput();
 
+            // Reset Double Jump saat mendarat di tanah
+            if (!isAirborne)
+            {
+                canDoubleJump = true;
+            }
+
+            // Logika Double Jump saat di udara (aktif jika enableDoubleJump di-ceklis di Inspector)
+            if (enableDoubleJump && isAirborne && canDoubleJump && Input.GetKeyDown(KeyCode.Space))
+            {
+                PerformDoubleJump();
+            }
+
             //GetKeyUp/Down requires an Update Cycle
             //BunnyHopping
             if (bunnyHopInputState == 1)
@@ -475,6 +539,78 @@ namespace SBPScripts
 
             bunnyHopAmount = Mathf.Clamp01(bunnyHopAmount);
 
+        }
+
+        private void PerformDoubleJump()
+        {
+            canDoubleJump = false;
+            // Dorong velocity Y ke atas untuk efek lompatan kedua di udara
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, doubleJumpForce, rb.linearVelocity.z);
+            if (fWheelRb != null) fWheelRb.linearVelocity = new Vector3(fWheelRb.linearVelocity.x, doubleJumpForce, fWheelRb.linearVelocity.z);
+            if (rWheelRb != null) rWheelRb.linearVelocity = new Vector3(rWheelRb.linearVelocity.x, doubleJumpForce, rWheelRb.linearVelocity.z);
+            Debug.Log("<color=yellow>Double Jump Executed!</color>");
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            foreach (ContactPoint contact in collision.contacts)
+            {
+                // Deteksi jika menabrak tembok/rintangan (normal bidang tegak lurus/miring > 50 derajat)
+                float wallAngle = Vector3.Angle(contact.normal, Vector3.up);
+                if (wallAngle > 50f)
+                {
+                    // Redam lonjakan impulsif ke atas saat menabrak rintangan agar tidak terlempar ke langit
+                    if (rb != null && rb.linearVelocity.y > 3f)
+                        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 3f, rb.linearVelocity.z);
+                    if (fWheelRb != null && fWheelRb.linearVelocity.y > 3f)
+                        fWheelRb.linearVelocity = new Vector3(fWheelRb.linearVelocity.x, 3f, fWheelRb.linearVelocity.z);
+                    if (rWheelRb != null && rWheelRb.linearVelocity.y > 3f)
+                        rWheelRb.linearVelocity = new Vector3(rWheelRb.linearVelocity.x, rWheelRb.linearVelocity.y * 0.2f, rWheelRb.linearVelocity.z);
+                    break;
+                }
+            }
+        }
+
+        public void ResetPhysicsState()
+        {
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            if (fWheelRb != null)
+            {
+                fWheelRb.linearVelocity = Vector3.zero;
+                fWheelRb.angularVelocity = Vector3.zero;
+            }
+
+            if (rWheelRb != null)
+            {
+                rWheelRb.linearVelocity = Vector3.zero;
+                rWheelRb.angularVelocity = Vector3.zero;
+            }
+
+            Rigidbody[] childRbs = GetComponentsInChildren<Rigidbody>();
+            foreach (Rigidbody r in childRbs)
+            {
+                r.linearVelocity = Vector3.zero;
+                r.angularVelocity = Vector3.zero;
+            }
+
+            customSteerAxis = 0f;
+            customLeanAxis = 0f;
+            customAccelerationAxis = 0f;
+            rawCustomAccelerationAxis = 0f;
+            steerInput = 0f;
+            pedalInput = 0f;
+            crankSpeed = restingCrank;
+            impactFrames = 0;
+            isAirborne = false;
+            isBunnyHopping = false;
+            isReversing = false;
+
+            Debug.Log("BicycleController physics and wheel state completely reset on respawn.");
         }
         float GroundConformity(bool toggle)
         {
@@ -591,9 +727,9 @@ namespace SBPScripts
                     steerInput = Input.GetAxis("Horizontal");
                     pedalInput = Input.GetAxis("Vertical");
 
-                    CustomInput("Horizontal", ref customSteerAxis, 5, 5, false);
+                    CustomInput("Horizontal", ref customSteerAxis, steerSensitivity, steerReturnSpeed, instantSteering);
                     CustomInput("Vertical", ref customAccelerationAxis, 1, 1, false);
-                    CustomInput("Horizontal", ref customLeanAxis, 1, 1, false);
+                    CustomInput("Horizontal", ref customLeanAxis, steerSensitivity, steerReturnSpeed, instantSteering);
                     CustomInput("Vertical", ref rawCustomAccelerationAxis, 1, 1, true);
                 }
                 else
