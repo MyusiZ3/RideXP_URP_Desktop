@@ -10,6 +10,9 @@ public class RespawnManager : MonoBehaviour
     public AudioClip triggerSound;   // Suara saat respawn point diinjak atau tombol respawn ditekan
     private AudioSource audioSource; // Komponen AudioSource di GameObject ini
 
+    [Header("Hardware Settings")]
+    public bool enableArduinoHardware = false; // Set to false for Desktop Mode
+
     // Referensi ke SerialController untuk komunikasi dengan Arduino
     public SerialController serialController;
 
@@ -59,15 +62,14 @@ public class RespawnManager : MonoBehaviour
             Debug.LogWarning("TextMeshProUGUI timerText belum di-assign di RespawnManager!");
         }
 
-        // Pastikan SerialController telah diatur di Inspector
-        if (serialController == null)
+        // Pastikan SerialController telah diatur di Inspector (hanya jika enableArduinoHardware aktif)
+        if (enableArduinoHardware && serialController == null)
         {
-            Debug.LogError("SerialController belum di-assign ke RespawnManager! Pastikan di Inspector!");
-            // return; // Bisa tambahkan ini untuk mencegah error lebih lanjut kalau serialController null
+            Debug.LogWarning("enableArduinoHardware diaktifkan tetapi SerialController belum di-assign di RespawnManager.");
         }
 
         // Inisialisasi UI Debugging dengan pesan awal
-        if (debugSerialDataText != null) debugSerialDataText.text = "Serial Data: Waiting...";
+        if (debugSerialDataText != null) debugSerialDataText.text = enableArduinoHardware ? "Serial Data: Waiting..." : "Serial Data: Disabled (Desktop Mode)";
         if (debugButtonStateText != null) debugButtonStateText.text = "Button State: 0 (Release)";
         // Inisialisasi lastRespawnPoint dengan Vector3.zero agar bisa dicek apakah sudah diset
         lastRespawnPoint = Vector3.zero;
@@ -89,12 +91,13 @@ public class RespawnManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // --- Cek Input Keyboard 'R' (opsional, bisa dihapus setelah yakin Arduino berfungsi) ---
+        // --- Cek Input Keyboard 'R' (Respawn Desktop) ---
         // Jika tidak sedang respawning DAN tombol 'R' ditekan DAN respawn point sudah diset
         if (!isRespawning && Input.GetKeyDown(KeyCode.R) && lastRespawnPoint != Vector3.zero)
         {
             Debug.Log("<color=cyan>Respawn triggered by R key.</color>");
             StartRespawn(lastRespawnPoint, lastRespawnRotation); // Mulai countdown respawn
+            PlayTriggerSound();
         }
 
         // --- Update UI Debugging untuk status Respawn Point ---
@@ -103,13 +106,15 @@ public class RespawnManager : MonoBehaviour
             debugRespawnPointText.text = "Respawn Point: " + (lastRespawnPoint != Vector3.zero ? "<color=green>SET</color> (" + lastRespawnPoint.ToString("F1") + ")" : "<color=red>Not Set</color>");
         }
 
-        // --- Baca Data Serial dari Arduino ---
-        string message = serialController.ReadSerialMessage();
-        if (message != null)
+        // --- Baca Data Serial dari Arduino (hanya jika enableArduinoHardware diaktifkan) ---
+        if (enableArduinoHardware && serialController != null)
         {
-            // Debug.Log("Received from Arduino: " + message); // Aktifkan ini kalau mau lihat setiap pesan mentah
-            if (debugSerialDataText != null) debugSerialDataText.text = "Serial Data: " + message;
-            ProcessSerialData(message); // Proses data yang diterima
+            string message = serialController.ReadSerialMessage();
+            if (message != null)
+            {
+                if (debugSerialDataText != null) debugSerialDataText.text = "Serial Data: " + message;
+                ProcessSerialData(message); // Proses data yang diterima
+            }
         }
 
         // --- Update UI Debugging untuk status Tombol Arduino ---

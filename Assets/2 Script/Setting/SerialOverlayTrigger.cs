@@ -47,7 +47,11 @@ using System.Collections;
 
 public class SerialOverlayTrigger : MonoBehaviour
 {
-    SerialPort serial = new SerialPort("COM4", 115200); // Ganti sesuai port ESP kamu
+    public bool enableSerialOverlay = false; // Set to false for Desktop Mode
+    public string portName = "COM4";
+    public int baudRate = 115200;
+
+    private SerialPort serial;
 
     public GameObject overlayPanel; // Panel overlay
     public TextMeshProUGUI countdownText; // Teks countdown "Closed in ..."
@@ -59,15 +63,27 @@ public class SerialOverlayTrigger : MonoBehaviour
 
     void Start()
     {
-        serial.Open();
-        serial.ReadTimeout = 50;
-        overlayPanel.SetActive(false); // Biar pas start langsung hidden
-        countdownText.text = ""; // Kosongkan dulu
+        if (overlayPanel != null) overlayPanel.SetActive(false); // Biar pas start langsung hidden
+        if (countdownText != null) countdownText.text = ""; // Kosongkan dulu
+
+        if (enableSerialOverlay)
+        {
+            try
+            {
+                serial = new SerialPort(portName, baudRate);
+                serial.Open();
+                serial.ReadTimeout = 50;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("SerialOverlayTrigger Gagal Membuka Port Serial: " + ex.Message);
+            }
+        }
     }
 
     void Update()
     {
-        if (serial.IsOpen)
+        if (enableSerialOverlay && serial != null && serial.IsOpen)
         {
             try
             {
@@ -118,6 +134,6 @@ public class SerialOverlayTrigger : MonoBehaviour
 
     void OnApplicationQuit()
     {
-        if (serial.IsOpen) serial.Close();
+        if (serial != null && serial.IsOpen) serial.Close();
     }
 }
