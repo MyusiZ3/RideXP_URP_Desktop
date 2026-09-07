@@ -9,12 +9,18 @@ public class MainMenuGraphicsController : MonoBehaviour
     [Header("UI References")]
     public Toggle postProcessingToggle;
 
+    [Header("Bicycle Controls UI References")]
+    public Slider steerSensitivitySlider;
+    public TextMeshProUGUI steerSensitivityValueText;
+    public Toggle instantSteeringToggle;
+    public Toggle doubleJumpToggle;
+
     [Header("Motion Blur Quality Buttons")]
     public Button[] motionBlurButtons; // Array Button untuk Off, Low, Medium, High
 
     // Warna untuk visual feedback pada button
     public Color activeBgColor = new Color32(0xDF, 0x31, 0x4F, 0xFF); // Warna merah terang #DF314F
-    public Color inactiveBgColor = Color.black; // Warna hitam
+    public Color inactiveBgColor = Color.white; // Warna putih padat (non-transparan)
     public Color activeTextColor = Color.white; // Warna putih
     public Color inactiveTextColor = Color.black; // Warna hitam
 
@@ -33,6 +39,19 @@ public class MainMenuGraphicsController : MonoBehaviour
         if (postProcessingToggle != null)
         {
             postProcessingToggle.onValueChanged.AddListener(OnPostProcessingToggleChanged);
+        }
+
+        if (steerSensitivitySlider != null)
+        {
+            steerSensitivitySlider.onValueChanged.AddListener(OnSteerSensitivitySliderChanged);
+        }
+        if (instantSteeringToggle != null)
+        {
+            instantSteeringToggle.onValueChanged.AddListener(OnInstantSteeringToggleChanged);
+        }
+        if (doubleJumpToggle != null)
+        {
+            doubleJumpToggle.onValueChanged.AddListener(OnDoubleJumpToggleChanged);
         }
     }
 
@@ -99,12 +118,83 @@ public class MainMenuGraphicsController : MonoBehaviour
             {
                 postProcessingToggle.isOn = GraphicsSettingsManager.Instance.isPostProcessingEnabled;
             }
+
+            if (steerSensitivitySlider != null)
+            {
+                steerSensitivitySlider.value = GraphicsSettingsManager.Instance.steerSensitivity;
+                if (steerSensitivityValueText != null)
+                    steerSensitivityValueText.text = GraphicsSettingsManager.Instance.steerSensitivity.ToString("F0");
+            }
+
+            if (instantSteeringToggle != null)
+            {
+                instantSteeringToggle.isOn = GraphicsSettingsManager.Instance.instantSteering;
+            }
+
+            if (doubleJumpToggle != null)
+            {
+                doubleJumpToggle.isOn = GraphicsSettingsManager.Instance.enableDoubleJump;
+            }
             
+            // Update interaktivitas Slider Steer Sensitivity berdasarkan Instant Steering Toggle
+            UpdateSteerSensitivitySliderInteractability(GraphicsSettingsManager.Instance.instantSteering);
+
             // Update visual button Motion Blur sesuai setting yang dimuat
             UpdateMotionBlurButtonVisuals(GraphicsSettingsManager.Instance.motionBlurQuality);
             
             // Update interaktivitas button Motion Blur berdasarkan Post Processing Toggle
             UpdateMotionBlurButtonInteractability(GraphicsSettingsManager.Instance.isPostProcessingEnabled);
+        }
+    }
+
+    public void OnSteerSensitivitySliderChanged(float value)
+    {
+        if (GraphicsSettingsManager.Instance != null)
+        {
+            GraphicsSettingsManager.Instance.steerSensitivity = value;
+            if (steerSensitivityValueText != null)
+                steerSensitivityValueText.text = value.ToString("F0");
+            GraphicsSettingsManager.Instance.SaveSettings();
+        }
+    }
+
+    public void OnInstantSteeringToggleChanged(bool isOn)
+    {
+        if (GraphicsSettingsManager.Instance != null)
+        {
+            GraphicsSettingsManager.Instance.instantSteering = isOn;
+            GraphicsSettingsManager.Instance.SaveSettings();
+
+            UpdateSteerSensitivitySliderInteractability(isOn);
+        }
+    }
+
+    public void UpdateSteerSensitivitySliderInteractability(bool isInstantSteerActive)
+    {
+        if (steerSensitivitySlider != null)
+        {
+            steerSensitivitySlider.interactable = !isInstantSteerActive;
+
+            CanvasGroup group = steerSensitivitySlider.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = steerSensitivitySlider.gameObject.AddComponent<CanvasGroup>();
+            }
+            group.alpha = isInstantSteerActive ? 0.35f : 1.0f;
+        }
+
+        if (steerSensitivityValueText != null)
+        {
+            steerSensitivityValueText.alpha = isInstantSteerActive ? 0.35f : 1.0f;
+        }
+    }
+
+    public void OnDoubleJumpToggleChanged(bool isOn)
+    {
+        if (GraphicsSettingsManager.Instance != null)
+        {
+            GraphicsSettingsManager.Instance.enableDoubleJump = isOn;
+            GraphicsSettingsManager.Instance.SaveSettings();
         }
     }
 

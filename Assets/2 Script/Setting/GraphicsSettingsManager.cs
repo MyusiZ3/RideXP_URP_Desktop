@@ -11,6 +11,11 @@ public class GraphicsSettingsManager : MonoBehaviour
     public bool isPostProcessingEnabled = true; // Global toggle untuk semua post processing
     public MotionBlurQuality motionBlurQuality = MotionBlurQuality.Medium; // Default Medium
 
+    // --- Variabel untuk Menyimpan Pengaturan Kontrol Sepeda ---
+    public float steerSensitivity = 15f;
+    public bool instantSteering = false;
+    public bool enableDoubleJump = false;
+
     // Enum untuk kualitas Motion Blur
     public enum MotionBlurQuality
     {
@@ -61,8 +66,17 @@ public class GraphicsSettingsManager : MonoBehaviour
     {
         PlayerPrefs.SetInt("IsPostProcessingEnabled", isPostProcessingEnabled ? 1 : 0);
         PlayerPrefs.SetInt("MotionBlurQuality", (int)motionBlurQuality);
+
+        // Simpan Kontrol Sepeda
+        PlayerPrefs.SetFloat("SteerSensitivity", steerSensitivity);
+        PlayerPrefs.SetInt("InstantSteering", instantSteering ? 1 : 0);
+        PlayerPrefs.SetInt("EnableDoubleJump", enableDoubleJump ? 1 : 0);
+
         PlayerPrefs.Save();
-        Debug.Log("[GraphicsSettingsManager] Settings saved to PlayerPrefs.");
+        Debug.Log("[GraphicsSettingsManager] All Settings (Graphics & Bicycle Controls) saved to PlayerPrefs.");
+
+        // Terapkan grafik secara real-time tanpa restart scene
+        ApplyGraphicsRealtime();
     }
 
     public void LoadSettings()
@@ -71,13 +85,67 @@ public class GraphicsSettingsManager : MonoBehaviour
         {
             isPostProcessingEnabled = PlayerPrefs.GetInt("IsPostProcessingEnabled") == 1;
             motionBlurQuality = (MotionBlurQuality)PlayerPrefs.GetInt("MotionBlurQuality");
-            Debug.Log("[GraphicsSettingsManager] Settings loaded from PlayerPrefs.");
         }
         else
         {
-            Debug.Log("[GraphicsSettingsManager] No saved settings found, using defaults.");
             isPostProcessingEnabled = true;
             motionBlurQuality = MotionBlurQuality.Medium;
         }
+
+        // Load Kontrol Sepeda
+        steerSensitivity = PlayerPrefs.GetFloat("SteerSensitivity", 15f);
+        instantSteering = PlayerPrefs.GetInt("InstantSteering", 0) == 1;
+        enableDoubleJump = PlayerPrefs.GetInt("EnableDoubleJump", 0) == 1;
+
+        Debug.Log("[GraphicsSettingsManager] All Settings loaded from PlayerPrefs.");
+
+        // Terapkan grafik secara real-time
+        ApplyGraphicsRealtime();
+    }
+
+    public void ApplyGraphicsRealtime()
+    {
+        // 1. Terapkan toggle Post Processing ke semua kamera URP di scene aktif
+        foreach (var cam in Camera.allCameras)
+        {
+            if (cam != null && cam.TryGetComponent<UniversalAdditionalCameraData>(out var data))
+            {
+                data.renderPostProcessing = isPostProcessingEnabled;
+            }
+        }
+
+        // 2. Terapkan Motion Blur & Post Processing ke semua Volume Profile di scene
+        Volume[] volumes = Object.FindObjectsByType<Volume>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var vol in volumes)
+        {
+            if (vol == null) continue;
+
+            vol.enabled = isPostProcessingEnabled;
+
+            if (vol.profile != null && vol.profile.TryGet<MotionBlur>(out var mb))
+            {
+                if (!isPostProcessingEnabled || motionBlurQuality == MotionBlurQuality.Off)
+                {
+                    mb.active = false;
+                }
+                else
+                {
+                    mb.active = true;
+                    switch (motionBlurQuality)
+                    {
+                        case MotionBlurQuality.Low:
+                            mb.intensity.value = 0.3f;
+                            break;
+                        case MotionBlurQuality.Medium:
+                            mb.intensity.value = 0.6f;
+                            break;
+                        case MotionBlurQuality.High:
+                            mb.intensity.value = 1.0f;
+                            break;
+                    }
+                }
+            }
+        }
+        Debug.Log($"[GraphicsSettingsManager] Realtime Graphics Applied: PostProcessing={isPostProcessingEnabled}, MotionBlur={motionBlurQuality}");
     }
 }
