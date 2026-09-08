@@ -52,7 +52,6 @@ public class NPCBicycleAIController : MonoBehaviour
     private Rigidbody rb;
     private bool isSlowingDown = false;
     private BicycleController bikeController; // Variabel baru untuk menyimpan referensi
-    private float previousSteerInputForAnimation = 0f; // Untuk deteksi perubahan arah
 
     private Vector3 lastPosition;
     private float stuckTimer = 0f;

@@ -25,7 +25,7 @@ public class RagdollJointImitation : MonoBehaviour
 
     void Start()
     {
-        bicycleController = FindObjectOfType<BicycleController>();
+        bicycleController = FindFirstObjectByType<BicycleController>();
         CharacterCopyPosition = bicycleController.GetComponentInChildren<CyclistAnimController>(true).gameObject;
         CharacterCopyAnimations = GameObject.FindWithTag("AnimationToFollow");
         transform.position = new Vector3(CharacterCopyPosition.transform.position.x,bicycleController.transform.position.y,CharacterCopyPosition.transform.position.z);

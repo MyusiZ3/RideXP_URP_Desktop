@@ -12,8 +12,8 @@ namespace SBPScripts
         BicycleStatus bicycleStatus;
         void Start()
         {
-            bicycleCamera = FindObjectOfType<BicycleCamera>();
-            bicycleStatus = FindObjectOfType<BicycleStatus>();
+            bicycleCamera = FindFirstObjectByType<BicycleCamera>();
+            bicycleStatus = FindFirstObjectByType<BicycleStatus>();
         }
         void LateUpdate()
         {

@@ -28,7 +28,7 @@ namespace SBPScripts
 
         void Start()
         {
-            ragdollJointImitation = FindObjectOfType<RagdollJointImitation>();
+            ragdollJointImitation = FindFirstObjectByType<RagdollJointImitation>();
             maxForce = 2000f;
 
             springForce = 0f;

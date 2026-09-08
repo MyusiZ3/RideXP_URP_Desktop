@@ -30,7 +30,7 @@ namespace SBPScripts
         Vector3 initialSpringScale;
         void Start()
         {
-            bicycleController = FindObjectOfType<BicycleController>();
+            bicycleController = FindFirstObjectByType<BicycleController>();
             //Suspension Settings
             if (enable)
             {

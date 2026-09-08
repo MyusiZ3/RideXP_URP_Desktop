@@ -87,7 +87,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        leaderboardManager = FindObjectOfType<LeaderboardManager>();
+        leaderboardManager = FindFirstObjectByType<LeaderboardManager>();
         if (leaderboardManager == null)
         {
             Debug.LogError("LeaderboardManager tidak ditemukan di scene!");

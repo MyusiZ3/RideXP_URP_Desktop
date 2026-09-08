@@ -24,8 +24,8 @@ namespace SBPScripts
         float waitTime, prevLocalPosX;
         void Start()
         {
-            bicycleController = FindObjectOfType<BicycleController>();
-            bicycleStatus = FindObjectOfType<BicycleStatus>();
+            bicycleController = FindFirstObjectByType<BicycleController>();
+            bicycleStatus = FindFirstObjectByType<BicycleStatus>();
             rig = hipIK.transform.parent.gameObject.GetComponent<Rig>();
             if (bicycleStatus != null)
                 onOffBike = bicycleStatus.onBike;

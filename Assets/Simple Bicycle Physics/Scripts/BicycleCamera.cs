@@ -40,7 +40,7 @@ namespace SBPScripts
             if (stuntCamera)
             {
                 var follow = new GameObject("Follow");
-                var toFollow = GameObject.FindObjectOfType<BicycleController>().transform;
+                var toFollow = GameObject.FindFirstObjectByType<BicycleController>().transform;
                 follow.transform.SetParent(toFollow);
                 follow.transform.position = toFollow.position + toFollow.gameObject.GetComponent<BoxCollider>().center;
                 target = follow.transform;
@@ -49,7 +49,7 @@ namespace SBPScripts
                 lookAtHeight -= toFollow.gameObject.GetComponent<BoxCollider>().center.y;
             }
             else
-                target = GameObject.FindObjectOfType<BicycleController>().transform;
+                target = GameObject.FindFirstObjectByType<BicycleController>().transform;
         }
 
         void LateUpdate()

@@ -66,7 +66,7 @@ public class LeaderboardDisplay : MonoBehaviour
 
     void Start()
     {
-        leaderboardManager = FindObjectOfType<LeaderboardManager>();
+        leaderboardManager = FindFirstObjectByType<LeaderboardManager>();
 
         if (leaderboardEntryPrefab == null || leaderboardParent == null || yourPositionText == null)
         {
