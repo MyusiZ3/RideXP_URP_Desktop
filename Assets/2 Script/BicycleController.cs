@@ -188,12 +188,15 @@ namespace SBPScripts
                 Debug.Log($"{name} = Player Detected (Tag: {tag})");
 
                 // Sync kontrol dari GraphicsSettingsManager (Saved PlayerPrefs Settings)
-                if (GraphicsSettingsManager.Instance != null)
+                GraphicsSettingsManager manager = GraphicsSettingsManager.GetInstance();
+                if (manager != null)
                 {
-                    steerSensitivity = GraphicsSettingsManager.Instance.steerSensitivity;
-                    steerReturnSpeed = GraphicsSettingsManager.Instance.steerSensitivity;
-                    instantSteering = GraphicsSettingsManager.Instance.instantSteering;
-                    enableDoubleJump = GraphicsSettingsManager.Instance.enableDoubleJump;
+                    manager.LoadSettings();
+                    steerSensitivity = manager.steerSensitivity;
+                    steerReturnSpeed = manager.steerSensitivity;
+                    instantSteering = manager.instantSteering;
+                    enableDoubleJump = manager.enableDoubleJump;
+                    Debug.Log($"[BicycleController] Applied Settings: Sensitivity={steerSensitivity}, Instant={instantSteering}, DoubleJump={enableDoubleJump}");
                 }
             }
 
@@ -741,9 +744,12 @@ namespace SBPScripts
                     steerInput = Input.GetAxis("Horizontal");
                     pedalInput = Input.GetAxis("Vertical");
 
-                    CustomInput("Horizontal", ref customSteerAxis, steerSensitivity, steerReturnSpeed, instantSteering);
+                    float effectiveSensitivity = instantSteering ? 100f : Mathf.Lerp(1.5f, 12f, Mathf.Clamp01((steerSensitivity - 1f) / 49f));
+                    float effectiveReturnSpeed = Mathf.Lerp(3f, 15f, Mathf.Clamp01((steerSensitivity - 1f) / 49f));
+
+                    CustomInput("Horizontal", ref customSteerAxis, effectiveSensitivity, effectiveReturnSpeed, instantSteering);
                     CustomInput("Vertical", ref customAccelerationAxis, 1, 1, false);
-                    CustomInput("Horizontal", ref customLeanAxis, steerSensitivity, steerReturnSpeed, instantSteering);
+                    CustomInput("Horizontal", ref customLeanAxis, effectiveSensitivity, effectiveReturnSpeed, instantSteering);
                     CustomInput("Vertical", ref rawCustomAccelerationAxis, 1, 1, true);
                 }
                 else
