@@ -21,6 +21,7 @@ TagManager:
   - ObstacleTrigger
   - DoubleJumpZone
   - TurnTrigger
+  - Terrain
   layers:
   - Default
   - TransparentFX

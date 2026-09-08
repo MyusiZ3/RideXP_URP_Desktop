@@ -3862,9 +3862,9 @@ MonoBehaviour:
   meshfilter: {fileID: 460844323}
   controlPoints:
   - {x: -0.000009536743, y: -1.2113837, z: 0.00000011920929, w: 4}
-  - {x: -3.5494833, y: -0.30502337, z: -7.056984, w: 8.349982}
-  - {x: -3.494378, y: -0.44772762, z: 13.070581, w: 6.8219943}
-  - {x: -2.5784788, y: -0.46381724, z: 16.424852, w: 6.8219943}
+  - {x: -3.549483, y: -0.30502337, z: -7.056984, w: 8.349982}
+  - {x: -3.4943779, y: -0.44772762, z: 13.070581, w: 6.8219943}
+  - {x: -2.5784786, y: -0.4638172, z: 16.424852, w: 6.8219943}
   controlPointsRotations:
   - {x: 0, y: 0, z: 0, w: 1}
   - {x: 0, y: 0, z: 0, w: 1}
@@ -17484,6 +17484,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3029580714732338671, guid: 51b987936c7231e458db405844650af8, type: 3}
+      propertyPath: topSpeed
+      value: 24.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3029580714732338671, guid: 51b987936c7231e458db405844650af8, type: 3}
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
@@ -17502,6 +17506,18 @@ PrefabInstance:
     - target: {fileID: 4657635610763773205, guid: c35bda782e10ae34f8f9d898ddfba4ae, type: 3}
       propertyPath: airTimeSettings.heightThreshold
       value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 22171167770856287, guid: 54b2a01e27bfc1a41aace438a116fcbf, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7355019223214247201, guid: 54b2a01e27bfc1a41aace438a116fcbf, type: 3}
+      propertyPath: airTimeSettings.heightThreshold
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8294854776103999270, guid: 54b2a01e27bfc1a41aace438a116fcbf, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4093688017176566862, guid: b33c0a708c8fc61409f8b6f749cf6d80, type: 3}
       propertyPath: airTimeSettings.heightThreshold
@@ -17998,18 +18014,6 @@ PrefabInstance:
     - target: {fileID: 2617065421820768419, guid: 2ff8ad09f48a67e42b714f72ee05996c, type: 3}
       propertyPath: airTimeSettings.heightThreshold
       value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 22171167770856287, guid: 54b2a01e27bfc1a41aace438a116fcbf, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7355019223214247201, guid: 54b2a01e27bfc1a41aace438a116fcbf, type: 3}
-      propertyPath: airTimeSettings.heightThreshold
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 8294854776103999270, guid: 54b2a01e27bfc1a41aace438a116fcbf, type: 3}
-      propertyPath: m_Enabled
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1698423308259885832, guid: f9f5c18f193194a48ad0253089d4fd55, type: 3}
       propertyPath: m_Enabled

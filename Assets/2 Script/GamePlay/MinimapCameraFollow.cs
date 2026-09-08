@@ -1,12 +1,16 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
+/// <summary>
+/// Controls top-down minimap camera tracking following the target player transform.
+/// </summary>
 public class MinimapCameraFollow : MonoBehaviour
 {
-    public Transform player; // Drag player ke sini
-    public bool rotateWithPlayer = false; // Centang ini kalau mau minimap ikut arah
-
-    public float height = 20f;   // Ketinggian kamera dari player
-    public float distanceBehind = 0f; // Optional, kalau mau agak di belakang player
+    [Header("Target & Camera Settings")]
+    public Transform player;
+    public bool rotateWithPlayer = false;
+    public float height = 20f;
+    public float distanceBehind = 0f;
 
     private void Start()
     {
@@ -14,11 +18,11 @@ public class MinimapCameraFollow : MonoBehaviour
         if (cam != null)
         {
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0f, 0f, 0f, 0f); // Background transparan (Alpha = 0)
+            cam.backgroundColor = new Color(0f, 0f, 0f, 0f);
 
-            if (cam.TryGetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>(out var data))
+            if (cam.TryGetComponent<UniversalAdditionalCameraData>(out var data))
             {
-                data.renderPostProcessing = false; // WAJIB OFF agar URP tidak mengubah Alpha 0 menjadi hitam padat
+                data.renderPostProcessing = false;
                 data.requiresColorTexture = false;
                 data.requiresDepthTexture = false;
             }
@@ -39,16 +43,8 @@ public class MinimapCameraFollow : MonoBehaviour
         }
 
         transform.position = newPosition;
-
-        if (rotateWithPlayer)
-        {
-            // Kamera muter sesuai arah player
-            transform.rotation = Quaternion.Euler(90f, player.eulerAngles.y, 0f);
-        }
-        else
-        {
-            // Kamera tetap top-down fix
-            transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        }
+        transform.rotation = rotateWithPlayer 
+            ? Quaternion.Euler(90f, player.eulerAngles.y, 0f) 
+            : Quaternion.Euler(90f, 0f, 0f);
     }
 }

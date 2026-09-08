@@ -3,6 +3,9 @@ using UnityEngine;
 using TMPro;
 using SBPScripts;
 
+/// <summary>
+/// Triggers a temporary speed boost and optional UI text/SFX when entered by the player.
+/// </summary>
 public class SpeedBoostZone : MonoBehaviour
 {
     [Header("Boost Settings")]
@@ -14,8 +17,8 @@ public class SpeedBoostZone : MonoBehaviour
     public AudioSource audioSource;
 
     [Header("UI Boost Text")]
-    public TMP_Text boostText; // 🟡 Drag TMP_Text dari scene
-    public float fadeDuration = 1f; // Durasi fade out text
+    public TMP_Text boostText;
+    public float fadeDuration = 1f;
 
     private bool isBoosting = false;
 
@@ -29,14 +32,12 @@ public class SpeedBoostZone : MonoBehaviour
             {
                 isBoosting = true;
                 bike.ApplySpeedBoost(speedMultiplier, boostDuration);
-                Debug.Log("Speedup On!");
 
                 if (boostSFX != null)
                 {
                     (audioSource != null ? audioSource : GetComponent<AudioSource>())?.PlayOneShot(boostSFX);
                 }
 
-                // Tampilkan UI teks
                 if (boostText != null)
                 {
                     StartCoroutine(ShowBoostText());
@@ -47,16 +48,16 @@ public class SpeedBoostZone : MonoBehaviour
         }
     }
 
-    IEnumerator ResetBoostCooldown()
+    private IEnumerator ResetBoostCooldown()
     {
         yield return new WaitForSeconds(boostDuration);
         isBoosting = false;
     }
 
-    IEnumerator ShowBoostText()
+    private IEnumerator ShowBoostText()
     {
         boostText.text = "Speed Up!";
-        boostText.alpha = 1f; // Full visible
+        boostText.alpha = 1f;
         boostText.gameObject.SetActive(true);
 
         float timer = 0f;
@@ -71,3 +72,4 @@ public class SpeedBoostZone : MonoBehaviour
         boostText.gameObject.SetActive(false);
     }
 }
+

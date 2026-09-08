@@ -590,6 +590,21 @@ namespace SBPScripts
 
         public void ResetPhysicsState()
         {
+            if (cycleGeometry != null)
+            {
+                if (fPhysicsWheel != null && cycleGeometry.fWheelVisual != null)
+                {
+                    fPhysicsWheel.transform.position = cycleGeometry.fWheelVisual.transform.position;
+                    fPhysicsWheel.transform.rotation = cycleGeometry.fWheelVisual.transform.rotation;
+                }
+
+                if (rPhysicsWheel != null && cycleGeometry.RWheel != null)
+                {
+                    rPhysicsWheel.transform.position = cycleGeometry.RWheel.transform.position;
+                    rPhysicsWheel.transform.rotation = cycleGeometry.RWheel.transform.rotation;
+                }
+            }
+
             if (rb != null)
             {
                 rb.linearVelocity = Vector3.zero;
@@ -627,7 +642,8 @@ namespace SBPScripts
             isBunnyHopping = false;
             isReversing = false;
 
-            Debug.Log("BicycleController physics and wheel state completely reset on respawn.");
+            Physics.SyncTransforms();
+            Debug.Log("[BicycleController] Physics and wheel state completely reset on respawn.");
         }
         float GroundConformity(bool toggle)
         {
