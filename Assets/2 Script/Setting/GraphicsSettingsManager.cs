@@ -53,11 +53,9 @@ public class GraphicsSettingsManager : MonoBehaviour
     {
         if (Instance == null)
         {
-            Debug.LogWarning("[GraphicsSettingsManager] Instance not found, creating a new one dynamically.");
+            Debug.Log("[GraphicsSettingsManager] Instance auto-created dynamically.");
             GameObject managerGO = new GameObject("_GraphicsSettingsManager_RuntimeCreated");
             Instance = managerGO.AddComponent<GraphicsSettingsManager>();
-            // DontDestroyOnLoad akan dihandle di Awake() yang baru dipanggil
-            // load settings juga akan dihandle di Awake() yang baru dipanggil
         }
         return Instance;
     }
@@ -105,12 +103,20 @@ public class GraphicsSettingsManager : MonoBehaviour
 
     public void ApplyGraphicsRealtime()
     {
-        // 1. Terapkan toggle Post Processing ke semua kamera URP di scene aktif
+        // 1. Terapkan toggle Post Processing HANYA ke Kamera Utama (abaikan Minimap Camera agar background tetap transparan)
         foreach (var cam in Camera.allCameras)
         {
             if (cam != null && cam.TryGetComponent<UniversalAdditionalCameraData>(out var data))
             {
-                data.renderPostProcessing = isPostProcessingEnabled;
+                bool isMinimapCam = cam.targetTexture != null || cam.name.ToLower().Contains("minimap") || cam.GetComponent<MinimapCameraFollow>() != null;
+                if (isMinimapCam)
+                {
+                    data.renderPostProcessing = false; // WAJIB OFF agar tidak merusak Alpha transparan Minimap
+                }
+                else
+                {
+                    data.renderPostProcessing = isPostProcessingEnabled;
+                }
             }
         }
 

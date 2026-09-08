@@ -8,6 +8,23 @@ public class MinimapCameraFollow : MonoBehaviour
     public float height = 20f;   // Ketinggian kamera dari player
     public float distanceBehind = 0f; // Optional, kalau mau agak di belakang player
 
+    private void Start()
+    {
+        Camera cam = GetComponent<Camera>();
+        if (cam != null)
+        {
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0f, 0f, 0f, 0f); // Background transparan (Alpha = 0)
+
+            if (cam.TryGetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>(out var data))
+            {
+                data.renderPostProcessing = false; // WAJIB OFF agar URP tidak mengubah Alpha 0 menjadi hitam padat
+                data.requiresColorTexture = false;
+                data.requiresDepthTexture = false;
+            }
+        }
+    }
+
     private void LateUpdate()
     {
         if (player == null) return;
